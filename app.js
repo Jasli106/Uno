@@ -32,9 +32,16 @@ io.sockets.on('connection', function(socket) {
     //When connection disconnected, delete socket from list
     socket.on('disconnect', function() {
         for(var i in roomList) {
+            //If disconnecting user was host of a room
             if(roomList[i].host == socket.id) {
                 io.sockets.emit('kickFromRoom', {code: roomList[i].code});
                 delete roomList[i];
+            //If disconnecting user wasn't host of a room
+            } else if(roomList[i].players.includes(socket.id)) {
+                roomList[i].players.splice(roomList[i].players.indexOf(socket.id), 1);
+                let name = SOCKET_LIST[socket.id].name;
+                roomList[i].names.splice(roomList[i].names.indexOf(name), 1);
+                io.sockets.emit('joinSuccess', {host: roomList[i].host, players: roomList[i].players, names: roomList[i].names});
             }
         }
         delete SOCKET_LIST[socket.id];
@@ -76,9 +83,9 @@ io.sockets.on('connection', function(socket) {
                 if(roomList[i].code == data.code) {
                     roomList[i].players.push(data.player);
                     roomList[i].names.push(data.name);
+                    io.sockets.emit('joinSuccess', {host: roomList[i].host, players: roomList[i].players, names: roomList[i].names});
                 }
             }
-            io.sockets.emit('joinSuccess');
         } else {
             io.sockets.emit('joinFail');
         }

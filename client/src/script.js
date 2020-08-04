@@ -1,6 +1,7 @@
 var socket = io();
 let socketList = [];
 let nameList = [];
+let playersList = [];
 let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name;
 let scene;
 let currSocket, host, currRoom;
@@ -81,15 +82,13 @@ function draw() {
             createButton.style.display = "none";
             joinButton.style.display = "none";
             roomInput.style.display = "none";
-            for(let i=0; i<nameList.length; i++) {
-                text(nameList[i], 0, i*10 + 50);
+            for(let i=0; i<playersList.length; i++) {
+                text(playersList[i], 0, i*10 + 50);
             }
-            //host should be able to start the game, everyone can see who is in it
+            //host should be able to start the game, everyone can just see who is in it
             if(host) {
                 text(roomCode, 50, 50);
                 startButton.style.display = "block";
-            } else {
-
             }
             break;
         //Playing scene
@@ -113,17 +112,26 @@ function play(){
 
 function createGame() {
     roomCode = genRandStr(8); //Generate random string
-    socket.emit("newRoom", {host: currSocket, code: roomCode, players: [], names: []});
+    console.log(roomCode);
+    socket.emit("newRoom", {host: currSocket, code: roomCode, players: [currSocket], names: [name]});
     host = true;
     scene = 2;
+    playersList.push(name);
+
+    //When new player joins room
+    socket.on('joinSuccess', function(data){
+        playersList = data.names;
+    });
 }
 
 function joinGame() {
     socket.emit("joinRoom", {player: currSocket, name: name, code: roomInput.value});
     currRoom = roomInput.value;
-    socket.on('joinSuccess', function(){
+    socket.on('joinSuccess', function(data){
         host = false;
         scene = 2;
+        playersList = data.names;
+
         //Listen for being kicked from a game
         socket.on('kickFromRoom', function(data){
             if(data.code == currRoom) {
@@ -140,7 +148,8 @@ function joinGame() {
 }
 
 function startGame() {
-    console.log("Starting game")
+    console.log("Starting game");
+    console.log(playersList);
 }
 
 function genRandStr(length) {
