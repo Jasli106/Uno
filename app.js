@@ -13,6 +13,7 @@ console.log("Server started");
 
 //Socket.io setup
 var SOCKET_LIST = {};
+var roomList = [];
 
 var io = require('socket.io') (server, {});
 //When new connection detected
@@ -30,8 +31,22 @@ io.sockets.on('connection', function(socket) {
 
     //When connection disconnected, delete socket from list
     socket.on('disconnect', function() {
+        for(var i in roomList) {
+            if(roomList[i].host == socket.id) {
+                io.sockets.emit('kickFromRoom', {code: roomList[i].code});
+                delete roomList[i];
+            }
+        }
         delete SOCKET_LIST[socket.id];
-    })
+        //Regenerate userList without disconnected user info
+        let userList = [];
+        for(var i in SOCKET_LIST) {
+            if(SOCKET_LIST[i].name) {
+                userList.push({name: SOCKET_LIST[i].name});
+            }
+        }
+        io.sockets.emit('updateUsers', userList);
+    });
 
     //Update users with names
     socket.on('newUser', function(data) {
@@ -42,7 +57,30 @@ io.sockets.on('connection', function(socket) {
                 userList.push({name: SOCKET_LIST[i].name});
             }
         }
-        console.log(userList);
         io.sockets.emit('updateUsers', userList);
-    })
+    });
+
+    //New room created
+    socket.on('newRoom', function(data) {
+        roomList.push(data);
+    });
+
+    //Joining existing room
+    socket.on('joinRoom', function(data) {
+        let codes = [];
+        for(var i in roomList) {
+            codes.push(roomList[i].code);
+        }
+        if(codes.includes(data.code)){
+            for(var i in roomList) {
+                if(roomList[i].code == data.code) {
+                    roomList[i].players.push(data.player);
+                    roomList[i].names.push(data.name);
+                }
+            }
+            io.sockets.emit('joinSuccess');
+        } else {
+            io.sockets.emit('joinFail');
+        }
+    });
 });
