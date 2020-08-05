@@ -15,6 +15,7 @@ function setup() {
     nameInput = document.getElementById("name-input");
     roomInput = document.getElementById("room-input");
     startButton = document.getElementById("start-game");
+    unoButton = document.getElementById("uno");
 
     createCanvas(windowWidth, windowHeight);
     colorMode(HSB, 360, 100, 100);
@@ -53,6 +54,7 @@ function draw() {
             nameInput.style.display = "block";
             roomInput.style.display = "none";
             startButton.style.display = "none";
+            unoButton.style.display = "none";
 
             if(nameInput.value.length == 0) {
                 playButton.disabled = true;
@@ -93,6 +95,7 @@ function draw() {
             break;
         //Playing scene
         case 3:
+            unoButton.style.display = "block";
             //Gameplay
             break;
     }
@@ -142,8 +145,9 @@ function joinGame() {
             }
         });
     });
-    socket.on('joinFail', function(){
+    socket.once('joinFail', function(){
         //Alert the user to try again
+        alert("This room does not exist.");
     });
 }
 
