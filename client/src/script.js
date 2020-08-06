@@ -3,7 +3,7 @@ let socketList = [];
 let nameList = [];
 let playersList = [];
 let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name;
-let scene;
+let scene, game = false;
 let currSocket, host, currRoom;
 
 function setup() {
@@ -97,6 +97,16 @@ function draw() {
         case 3:
             unoButton.style.display = "block";
             //Gameplay
+            //Get dealt a hand of 7 cards
+            while(game) {
+                //If it's your turn:
+                //Option to draw or play
+                //If draw, get dealt 1 card to add to hand
+                //If play, check if selected card is valid (wild or same color or value)
+                //Check if no cards left in hand
+                //Uhhhh implement the uno rule somehow
+                //Broadcast decision to server
+            }
             break;
     }
 }
@@ -154,6 +164,9 @@ function joinGame() {
 function startGame() {
     console.log("Starting game");
     console.log(playersList);
+    game = true;
+    scene = 3;
+    socket.emit('startGame'); //Add as data: player list and corresponding sockets (TODO: refactor playersList to include both player names and sockets)
 }
 
 function genRandStr(length) {
