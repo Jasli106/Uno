@@ -1,3 +1,4 @@
+const Deck = require('./helper/deck.js');
 
 //Express setup
 var express = require('express');
@@ -91,4 +92,40 @@ io.sockets.on('connection', function(socket) {
         }
     });
     
+    //Game started
+    socket.once('startGame', function(data) {
+        let i = 0;
+        //New deck for the game
+        var deck = new Deck();
+        deck.createDeck();
+        deck.shuffle();
+
+        var hands = [];
+        let players = [];
+
+        //Assign each player a number and deal each player a hand
+        for(player in data.players) {
+            SOCKET_LIST[data.players[player].socket].number = i;
+            i++;
+            SOCKET_LIST[data.players[player].socket].hand = deck.deal(7);
+            hands.push(SOCKET_LIST[data.players[player].socket].hand);
+            players.push({
+                name: SOCKET_LIST[data.players[player].socket].name,
+                socket: SOCKET_LIST[data.players[player].socket].id,
+                number: SOCKET_LIST[data.players[player].socket].number,
+                hand: SOCKET_LIST[data.players[player].socket].hand
+            });
+        }
+
+        //Flip over card for the discard pile
+        var discard = [];
+        discard.push(deck.deal(1));
+        io.sockets.emit('turn', {deck: deck, players: players, turn: 0});
+    });
+
+    //socket on 'play'
+        //Logic for determining who's turn it is
+        //Broadcast with data about who's turn it is bc apparently emitting to one client doesn't work
+        //Probably have to keep track of what cards are in the discard and draw piles
+        //Broadcast turn and top card in discard pile
 });

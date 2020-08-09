@@ -3,7 +3,7 @@ let socketList = [];
 let nameList = [];
 let playersList = [];
 let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name;
-let scene, game = false;
+let scene;
 let currSocket, host, currRoom;
 
 function setup() {
@@ -85,7 +85,7 @@ function draw() {
             joinButton.style.display = "none";
             roomInput.style.display = "none";
             for(let i=0; i<playersList.length; i++) {
-                text(playersList[i], 0, i*10 + 50);
+                text(playersList[i].name, 0, i*10 + 50);
             }
             //host should be able to start the game, everyone can just see who is in it
             if(host) {
@@ -96,21 +96,30 @@ function draw() {
         //Playing scene
         case 3:
             unoButton.style.display = "block";
+            startButton.style.display = "none";
             //Gameplay
-            //Get dealt a hand of 7 cards
-            while(game) {
-                //If it's your turn:
-                //Option to draw or play
-                //If draw, get dealt 1 card to add to hand
-                //If play, check if selected card is valid (wild or same color or value)
-                //Check if no cards left in hand
-                //Uhhhh implement the uno rule somehow
-                //Broadcast decision to server
-            }
+            //Listen for server sending turn
+            socket.on("turn", function(data){
+                for(player in data.players) {
+                    if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
+                        console.log(`It's ${data.players[player].name}'s turn!`)
+                    }
+                }
+            })
+            //If it's your turn:
+            //Option to draw or play
+            //If draw, get dealt 1 card to add to hand
+            //If play, check if selected card is valid (wild or same color or value)
+            //Check if no cards left in hand
+            //If no cards left, game = false + broadcast game end to server
+            //Uhhhh implement the uno rule somehow
+            //Broadcast play: decision to server, socket, player name
+            //If game over: socket.off turn
             break;
     }
 }
 
+//To enter main menu as a new user
 function play(){
     socket.emit("newUser", {currSocket: currSocket, name: nameInput.value});
     socket.on('updateUsers', function(data){
@@ -123,27 +132,35 @@ function play(){
     scene = 1;
 }
 
+//When player creates a new room
 function createGame() {
     roomCode = genRandStr(8); //Generate random string
     console.log(roomCode);
     socket.emit("newRoom", {host: currSocket, code: roomCode, players: [currSocket], names: [name]});
     host = true;
     scene = 2;
-    playersList.push(name);
+    playersList.push({name: name, socket: currSocket});
 
     //When new player joins room
     socket.on('joinSuccess', function(data){
-        playersList = data.names;
+        playersList = [];
+        for(let i=0; i<data.names.length; i++) {
+            playersList.push({name: data.names[i], socket: data.players[i]});
+        }
     });
 }
 
+//When player joins a room
 function joinGame() {
     socket.emit("joinRoom", {player: currSocket, name: name, code: roomInput.value});
     currRoom = roomInput.value;
     socket.on('joinSuccess', function(data){
         host = false;
         scene = 2;
-        playersList = data.names;
+        playersList = [];
+        for(let i=0; i<data.names.length; i++) {
+            playersList.push({name: data.names[i], socket: data.players[i]});
+        }
 
         //Listen for being kicked from a game
         socket.on('kickFromRoom', function(data){
@@ -161,14 +178,14 @@ function joinGame() {
     });
 }
 
+//To signal the start of a new game
 function startGame() {
     console.log("Starting game");
-    console.log(playersList);
-    game = true;
     scene = 3;
-    socket.emit('startGame'); //Add as data: player list and corresponding sockets (TODO: refactor playersList to include both player names and sockets)
+    socket.emit('startGame', {players: playersList, code: currRoom});
 }
 
+//Random string generator function for room codes
 function genRandStr(length) {
     var result           = '';
     var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

@@ -1,4 +1,6 @@
-class Deck {
+var Card = require('./card.js');
+
+class Deck{
     constructor() {
         this.deck = [];
     }
@@ -11,6 +13,9 @@ class Deck {
         Blue 0, 2x 1-9, 2x draw 2, 2x skip, 2x reverse
         Wild 4x change color, 4x draw 4
         */
+
+       let colors = ['RED', 'YELLOW', 'GREEN', 'BLUE', 'WILD'];
+       let values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'DRAW_TWO', 'SKIP', 'REVERSE', 'CHANGE_COLOR', 'DRAW_4'];
 
         //Red through Blue 0
         for(let color of colors.slice(0, 4)) {
@@ -56,7 +61,4 @@ class Deck {
     }
 }
 
-let deck = new Deck();
-deck.createDeck();
-deck.shuffle();
-console.log(deck.deal(7));
+module.exports = Deck;
