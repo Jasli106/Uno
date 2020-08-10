@@ -5,6 +5,7 @@ let playersList = [];
 let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name;
 let scene;
 let currSocket, host, currRoom;
+var topCard;
 
 function setup() {
     //socket = io();
@@ -44,6 +45,10 @@ function setup() {
 function draw() {
     background(95);
     fill(0);
+
+    if(topCard) {
+        text(`${topCard.color} ${topCard.value}`, 50, 50);
+    }
 
     switch(scene) {
         //Welcome scene
@@ -100,10 +105,13 @@ function draw() {
             socket.off('turn');
             socket.once("turn", function(data){
                 startButton.style.display = "none";
+                topCard = data.top;
                 for(let player in data.players) {
+                    //If currently your turn
                     if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
                         playTurn(data.players[player].hand);
                         unoButton.style.display = "block";
+                    //If not your turn
                     } else if(data.players[player].socket == currSocket) {
                         //Remove all cards from hand div
                         let handDiv = document.getElementById('hand');
@@ -113,7 +121,6 @@ function draw() {
                         //Hide draw button
                         drawButton.style.display = "none";
                         unoButton.style.display = "none";
-                        console.log(data.players[player].hand);
                     }
                 }
             });
@@ -138,7 +145,7 @@ function playTurn(hand) {
     hand.forEach(card => {
         var cardBtn = document.createElement('BUTTON');
         cardBtn.type = 'button';
-        cardBtn.innerHTML = "button"
+        cardBtn.innerHTML = `${card.color} ${card.value}`;
         cardBtn.onclick = function() {
             cardOnClick(card);
         };
@@ -149,36 +156,34 @@ function playTurn(hand) {
     drawButton.style.display = "block";
     drawButton.onclick = function() {
         socket.emit('drawCard', {socket: currSocket, room: currRoom});
-        /*drawButton.style.display = "none";
-        //Remove all card buttons (hide hand)
-        while(handDiv.firstChild){
-            handDiv.removeChild(handDiv.firstChild);
-        }*/
+        drawButton.style.display = "none";
     }
 }
 
+//When card selected to be played
 function cardOnClick(card) {
     //Check if card valid first
     socket.emit('validateCard', {card: card, room: currRoom});
+    socket.off('validateSuccess');
     socket.once('validateSuccess', function(data) {
         if(data.user == currSocket) {
-            console.log("card can be played");
             //Playing the card
             socket.emit('playCard', {card: card, user: currSocket, room: currRoom});
             drawButton.style.display = "none";
             let handDiv = document.getElementById('hand');
             while(handDiv.firstChild){
             handDiv.removeChild(hand.firstChild);
+            }
         }
-        }
-
     });
+    socket.off('validateFail');
     socket.once('validateFail', function(data) {
         if(data.user == currSocket) {
             //Alert the user to try again
             alert("Can't play card.");
         }
     });
+
 }
 
 //To enter main menu as a new user
@@ -240,6 +245,7 @@ function joinGame() {
         alert("This room does not exist.");
     });
     socket.once("turn", function(data){
+        topCard = data.top;
         scene = 3;
         startButton.style.display = "none";
         for(let player in data.players) {
@@ -259,6 +265,7 @@ function startGame() {
     startButton.style.display = "none";
     //Listen for server sending turn
     socket.once("turn", function(data){
+        topCard = data.top;
         scene = 3;
         startButton.style.display = "none";
         for(let player in data.players) {

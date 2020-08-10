@@ -103,7 +103,7 @@ io.sockets.on('connection', function(socket) {
     
             //Flip over card for the discard pile
             let discard = [];
-            discard.push(deck.deal(1));
+            discard.push(deck.deal(1)[0]);
     
             //Assign each player a number and deal each player a hand
             let hands = [];
@@ -178,19 +178,17 @@ io.sockets.on('connection', function(socket) {
             }
         }
         console.log(players);
-        io.sockets.emit('turn', {top: discard[0], players: players, turn: turn});
+        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn});
     });
         
     //Validating if a card can be played
     socket.on('validateCard', function(data) {
-        console.log("validating card");
         for(let i in roomList) {
             if(roomList[i].code == data.room) {
                 let topCard = roomList[i].discard[roomList[i].discard.length - 1];
-                let valid = true; //get rid of this later
-                //Logic for if card is valid or not
+                //Logic for if card is valid or not (matching color/value or wild)
+                let valid = (data.card.color == topCard.color || data.card.value == topCard.value || data.card.color == 'WILD');
                 if(valid){
-                    console.log("card is valid");
                     io.sockets.emit('validateSuccess', {user: socket.id, card: data.card});
                 } else {
                     io.sockets.emit('validateFail', {user: socket.id});
@@ -201,11 +199,36 @@ io.sockets.on('connection', function(socket) {
 
     //socket on playCard
     socket.on('playCard', function(data) {
-        console.log("playing card" + data.card);
-
-        //Add to discard pile
-        //Remove from hand
-        //Add to room.turn
-        //Emit turn {top: discard[discard.length - 1], players: players, turn: 0}
+        console.log("playing card" + data.card.color + data.card.value);
+        let turn, discard, players;
+        for(let i in roomList) {
+            if(roomList[i].code == data.room) {
+                //Update hand
+                for(let i in SOCKET_LIST) {
+                    if(SOCKET_LIST[i].id == data.user) {
+                        for(let card in SOCKET_LIST[i].hand){
+                            if(SOCKET_LIST[i].hand[card].color == data.card.color && SOCKET_LIST[i].hand[card].value == data.card.value) {
+                                let index = SOCKET_LIST[i].hand.indexOf(SOCKET_LIST[i].hand[card]);
+                                SOCKET_LIST[i].hand.splice(index, 1);
+                            }
+                        }
+                    }
+                }
+                //Get players
+                players = roomList[i].players;
+                //Update discard
+                roomList[i].discard.push(data.card);
+                discard = roomList[i].discard;
+                //Update turn
+                if(roomList[i].turn == roomList[i].players.length - 1) {
+                    roomList[i].turn = 0;
+                    turn = roomList[i].turn;
+                } else {
+                    roomList[i].turn += 1;
+                    turn = roomList[i].turn;
+                }
+            }
+        }
+        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn});
     });
 });
