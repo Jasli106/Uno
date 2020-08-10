@@ -16,6 +16,7 @@ function setup() {
     roomInput = document.getElementById("room-input");
     startButton = document.getElementById("start-game");
     unoButton = document.getElementById("uno");
+    drawButton = document.getElementById("draw");
 
     createCanvas(windowWidth, windowHeight);
     colorMode(HSB, 360, 100, 100);
@@ -55,6 +56,7 @@ function draw() {
             roomInput.style.display = "none";
             startButton.style.display = "none";
             unoButton.style.display = "none";
+            drawButton.style.display = "none";
 
             if(nameInput.value.length == 0) {
                 playButton.disabled = true;
@@ -95,23 +97,23 @@ function draw() {
             break;
         //Playing scene
         case 3:
-            unoButton.style.display = "block";
-            startButton.style.display = "none";
             //Gameplay
-            //Listen for server sending turn
             socket.on("turn", function(data){
-                for(player in data.players) {
+                console.log(data);
+                startButton.style.display = "none";
+                for(let player in data.players) {
                     if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
-                        console.log(`It's ${data.players[player].name}'s turn!`)
+                        console.log(`It's ${data.players[player].name}'s turn!`);
+                        playTurn(data.players[player].hand);
+                        unoButton.style.display = "block";
+                    } else if(data.players[player].socket == currSocket) {
+                        console.log(data.players[player].hand);
                     }
                 }
-            })
-            //If it's your turn:
-            //Option to draw or play
-            //If draw, get dealt 1 card to add to hand
+            });
             //If play, check if selected card is valid (wild or same color or value)
             //Check if no cards left in hand
-            //If no cards left, game = false + broadcast game end to server
+            //If no cards left, broadcast game end to server
             //Uhhhh implement the uno rule somehow
             //Broadcast play: decision to server, socket, player name
             //If game over: socket.off turn
@@ -119,8 +121,62 @@ function draw() {
     }
 }
 
+//Functionality for when it's your turn
+function playTurn(hand) {
+    //Remove all cards from hand div
+    let handDiv = document.getElementById('hand');
+    while(handDiv.firstChild){
+        handDiv.removeChild(handDiv.firstChild);
+    }
+    //Regenerate hand
+    hand.forEach(card => {
+        var cardBtn = document.createElement('BUTTON');
+        cardBtn.type = 'button';
+        cardBtn.innerHTML = "button"
+        cardBtn.onclick = function() {
+            cardOnClick(card);
+        };
+        handDiv.appendChild(cardBtn);
+    });
+
+    //Show draw button + functionality
+    drawButton.style.display = "block";
+    drawButton.onclick = function() {
+        socket.emit('drawCard', currSocket);
+        /*drawButton.style.display = "none";
+        //Remove all card buttons (hide hand)
+        while(handDiv.firstChild){
+            handDiv.removeChild(handDiv.firstChild);
+        }*/
+    }
+}
+
+function cardOnClick(card) {
+    //Check if card valid first
+    socket.emit('validateCard', {card: card, room: currRoom});
+    socket.once('validateSuccess', function(data) {
+        if(data.user == currSocket) {
+            console.log("card can be played");
+            //Playing the card
+            socket.emit('playCard', {card: card, user: currSocket, room: currRoom});
+            drawButton.style.display = "none";
+            let handDiv = document.getElementById('hand');
+            while(handDiv.firstChild){
+            handDiv.removeChild(hand.firstChild);
+        }
+        }
+
+    });
+    socket.once('validateFail', function(data) {
+        if(data.user == currSocket) {
+            //Alert the user to try again
+            alert("Can't play card.");
+        }
+    });
+}
+
 //To enter main menu as a new user
-function play(){
+function play() {
     socket.emit("newUser", {currSocket: currSocket, name: nameInput.value});
     socket.on('updateUsers', function(data){
         nameList = [];
@@ -135,6 +191,7 @@ function play(){
 //When player creates a new room
 function createGame() {
     roomCode = genRandStr(8); //Generate random string
+    currRoom = roomCode;
     console.log(roomCode);
     socket.emit("newRoom", {host: currSocket, code: roomCode, players: [currSocket], names: [name]});
     host = true;
@@ -176,12 +233,38 @@ function joinGame() {
         //Alert the user to try again
         alert("This room does not exist.");
     });
+    socket.once("turn", function(data){
+        scene = 3;
+        startButton.style.display = "none";
+        for(let player in data.players) {
+            if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
+                console.log(`It's ${data.players[player].name}'s turn!`);
+                playTurn(data.players[player].hand);
+                unoButton.style.display = "block";
+            } else if(data.players[player].socket == currSocket) {
+                console.log(data.players[player].hand);
+            }
+        }
+    });
 }
 
 //To signal the start of a new game
 function startGame() {
+    //Listen for server sending turn
+    socket.once("turn", function(data){
+        scene = 3;
+        startButton.style.display = "none";
+        for(let player in data.players) {
+            if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
+                console.log(`It's ${data.players[player].name}'s turn!`);
+                playTurn(data.players[player].hand);
+                unoButton.style.display = "block";
+            } else if(data.players[player].socket == currSocket) {
+                console.log(data.players[player].hand);
+            }
+        }
+    });
     console.log("Starting game");
-    scene = 3;
     socket.emit('startGame', {players: playersList, code: currRoom});
 }
 
@@ -190,7 +273,7 @@ function genRandStr(length) {
     var result           = '';
     var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
+    for ( let i = 0; i < length; i++ ) {
        result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;

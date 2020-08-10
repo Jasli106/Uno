@@ -25,14 +25,14 @@ io.sockets.on('connection', function(socket) {
 
     //Update all users with new user info
     let pack = [];
-    for(var i in SOCKET_LIST) {
+    for(let i in SOCKET_LIST) {
         pack.push({id: SOCKET_LIST[i].id});
     }
     io.sockets.emit('newConnection', pack);
 
     //When connection disconnected, delete socket from list
     socket.on('disconnect', function() {
-        for(var i in roomList) {
+        for(let i in roomList) {
             //If disconnecting user was host of a room
             if(roomList[i].host == socket.id) {
                 io.sockets.emit('kickFromRoom', {code: roomList[i].code});
@@ -48,7 +48,7 @@ io.sockets.on('connection', function(socket) {
         delete SOCKET_LIST[socket.id];
         //Regenerate userList without disconnected user info
         let userList = [];
-        for(var i in SOCKET_LIST) {
+        for(let i in SOCKET_LIST) {
             if(SOCKET_LIST[i].name) {
                 userList.push({name: SOCKET_LIST[i].name});
             }
@@ -60,7 +60,7 @@ io.sockets.on('connection', function(socket) {
     socket.on('newUser', function(data) {
         let userList = [];
         SOCKET_LIST[data.currSocket].name = data.name;
-        for(var i in SOCKET_LIST) {
+        for(let i in SOCKET_LIST) {
             if(SOCKET_LIST[i].name) {
                 userList.push({name: SOCKET_LIST[i].name});
             }
@@ -76,11 +76,11 @@ io.sockets.on('connection', function(socket) {
     //Joining existing room
     socket.on('joinRoom', function(data) {
         let codes = [];
-        for(var i in roomList) {
+        for(let i in roomList) {
             codes.push(roomList[i].code);
         }
         if(codes.includes(data.code)){
-            for(var i in roomList) {
+            for(let i in roomList) {
                 if(roomList[i].code == data.code) {
                     roomList[i].players.push(data.player);
                     roomList[i].names.push(data.name);
@@ -93,39 +93,92 @@ io.sockets.on('connection', function(socket) {
     });
     
     //Game started
-    socket.once('startGame', function(data) {
-        let i = 0;
-        //New deck for the game
-        var deck = new Deck();
-        deck.createDeck();
-        deck.shuffle();
+    socket.on('startGame', function(data) {
+        let gameSetup = new Promise(function(resolve, reject) {
+            let i = 0;
+            //New deck for the game
+            let deck = new Deck();
+            deck.createDeck();
+            deck.shuffle();
+    
+            //Flip over card for the discard pile
+            let discard = [];
+            discard.push(deck.deal(1));
+    
+            //Assign each player a number and deal each player a hand
+            let hands = [];
+            let players = [];
+    
+            for(let player in data.players) {
+                SOCKET_LIST[data.players[player].socket].number = i;
+                i++;
+                SOCKET_LIST[data.players[player].socket].hand = deck.deal(7);
+                hands.push(SOCKET_LIST[data.players[player].socket].hand);
+                players.push({
+                    name: SOCKET_LIST[data.players[player].socket].name,
+                    socket: SOCKET_LIST[data.players[player].socket].id,
+                    number: SOCKET_LIST[data.players[player].socket].number,
+                    hand: SOCKET_LIST[data.players[player].socket].hand
+                });
+            }
+    
+            if(discard.length != 0 && players.length != 0) {
+                resolve({code: data.code, deck: deck, discard: discard, hands: hands, players: players});
+            } else {
+                reject(new Error("Data was not retrieved"));
+            }
+        });
 
-        var hands = [];
-        let players = [];
 
-        //Assign each player a number and deal each player a hand
-        for(player in data.players) {
-            SOCKET_LIST[data.players[player].socket].number = i;
-            i++;
-            SOCKET_LIST[data.players[player].socket].hand = deck.deal(7);
-            hands.push(SOCKET_LIST[data.players[player].socket].hand);
-            players.push({
-                name: SOCKET_LIST[data.players[player].socket].name,
-                socket: SOCKET_LIST[data.players[player].socket].id,
-                number: SOCKET_LIST[data.players[player].socket].number,
-                hand: SOCKET_LIST[data.players[player].socket].hand
-            });
-        }
+        gameSetup.then(function(data) {
+            //Store deck, discard pile, player hands, and current turn for this room
+            for(let i in roomList) {
+                if(roomList[i].code == data.code) {
+                    roomList[i].deck = data.deck;
+                    roomList[i].discard = data.discard;
+                    roomList[i].hands = data.hands;
+                    roomList[i].turn = 0;
+                }
+            }
+            io.sockets.emit('turn', {top: data.discard[0], players: data.players, turn: 0});
+        })
+        .catch(function(error) {
+            console.log(error.message);
+        })
 
-        //Flip over card for the discard pile
-        var discard = [];
-        discard.push(deck.deal(1));
-        io.sockets.emit('turn', {deck: deck, players: players, turn: 0});
     });
 
-    //socket on 'play'
-        //Logic for determining who's turn it is
-        //Broadcast with data about who's turn it is bc apparently emitting to one client doesn't work
-        //Probably have to keep track of what cards are in the discard and draw piles
-        //Broadcast turn and top card in discard pile
+    //socket on 'drawCard'
+    socket.on('drawCard', function(data) {
+        //Deal card to player
+        console.log("Drawing card");
+    });
+        
+    //Validating if a card can be played
+    socket.on('validateCard', function(data) {
+        console.log("validating card");
+        for(let i in roomList) {
+            if(roomList[i].code == data.room) {
+                let topCard = roomList[i].discard[roomList[i].discard.length - 1];
+                let valid = true; //get rid of this later
+                //Logic for if card is valid or not
+                if(valid){
+                    console.log("card is valid");
+                    io.sockets.emit('validateSuccess', {user: socket.id, card: data.card});
+                } else {
+                    io.sockets.emit('validateFail', {user: socket.id});
+                }
+            }
+        }
+    });
+
+    //socket on playCard
+    socket.on('playCard', function(data) {
+        console.log("playing card" + data.card);
+
+        //Add to discard pile
+        //Remove from hand
+        //Add to room.turn
+        //Emit turn {top: discard[discard.length - 1], players: players, turn: 0}
+    });
 });
