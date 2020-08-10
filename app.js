@@ -137,6 +137,7 @@ io.sockets.on('connection', function(socket) {
                     roomList[i].deck = data.deck;
                     roomList[i].discard = data.discard;
                     roomList[i].hands = data.hands;
+                    roomList[i].players = data.players;
                     roomList[i].turn = 0;
                 }
             }
@@ -148,10 +149,36 @@ io.sockets.on('connection', function(socket) {
 
     });
 
-    //socket on 'drawCard'
+    //Player draws a card
     socket.on('drawCard', function(data) {
-        //Deal card to player
-        console.log("Drawing card");
+        let deck, card, discard, players, turn;
+        //Update player info
+        for(let i in SOCKET_LIST) {
+            if(SOCKET_LIST[i].id == data.socket) {
+                //Update room info
+                for(let i in roomList) {
+                    if(roomList[i].code == data.room) {
+                        deck = roomList[i].deck;
+                        discard = roomList[i].discard;
+                        players = roomList[i].players;
+                        card = deck.deal(1)[0];
+                        console.log(card);
+                        roomList[i].deck = deck;
+                        roomList[i].hands[roomList[i].turn].push(card);
+                        //Update turn
+                        if(roomList[i].turn == roomList[i].players.length - 1) {
+                            roomList[i].turn = 0;
+                            turn = roomList[i].turn;
+                        } else {
+                            roomList[i].turn += 1;
+                            turn = roomList[i].turn;
+                        }
+                    }
+                }
+            }
+        }
+        console.log(players);
+        io.sockets.emit('turn', {top: discard[0], players: players, turn: turn});
     });
         
     //Validating if a card can be played
