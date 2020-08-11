@@ -162,7 +162,6 @@ io.sockets.on('connection', function(socket) {
                         discard = roomList[i].discard;
                         players = roomList[i].players;
                         card = deck.deal(1)[0];
-                        console.log(card);
                         roomList[i].deck = deck;
                         roomList[i].hands[roomList[i].turn].push(card);
                         //Update turn
@@ -177,7 +176,6 @@ io.sockets.on('connection', function(socket) {
                 }
             }
         }
-        console.log(players);
         io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn});
     });
         
@@ -199,7 +197,7 @@ io.sockets.on('connection', function(socket) {
 
     //socket on playCard
     socket.on('playCard', function(data) {
-        console.log("playing card" + data.card.color + data.card.value);
+        console.log("playing card " + data.card.color + data.card.value);
         let turn, discard, players;
         for(let i in roomList) {
             if(roomList[i].code == data.room) {

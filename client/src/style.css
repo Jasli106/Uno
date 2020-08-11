@@ -13,3 +13,13 @@ label {
     top: 60%;
     left: 50%;
 }
+
+#hand > * {
+    height: 91px;
+    width: 65px;
+    margin-right: 10px;
+    padding: 0px;
+    background: transparent;
+    border: none;
+    color: transparent;
+}

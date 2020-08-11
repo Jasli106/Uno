@@ -42,7 +42,7 @@ function setup() {
     scene = 0;
 }
 
-function draw() {
+function gameLoop() {
     background(95);
     fill(0);
 
@@ -144,8 +144,8 @@ function playTurn(hand) {
     //Regenerate hand
     hand.forEach(card => {
         var cardBtn = document.createElement('BUTTON');
-        cardBtn.type = 'button';
-        cardBtn.innerHTML = `${card.color} ${card.value}`;
+        cardBtn.type = 'card';
+        cardBtn.innerHTML = `<img src="../client/assets/${card.color}${card.value}.png" alt="${card.color} ${card.value}" width="65" height="91">`//`${card.color} ${card.value}`;
         cardBtn.onclick = function() {
             cardOnClick(card);
         };
@@ -290,3 +290,6 @@ function genRandStr(length) {
     }
     return result;
  }
+
+
+ setInterval(gameLoop, 33);
