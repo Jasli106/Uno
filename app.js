@@ -195,17 +195,44 @@ io.sockets.on('connection', function(socket) {
         }
     });
 
+
     //socket on playCard
     socket.on('playCard', function(data) {
         console.log("playing card " + data.card.color + data.card.value);
+        let oldColor = data.card.color;
+        switch(data.card.value) {
+            case "CHANGE_COLOR":
+                data.card.color = data.newColor;
+                break;
+            
+            case "DRAW_4":
+                data.card.color = data.newColor;
+                //Draw 4 logic
+                break;
+            
+            case "DRAW_TWO":
+                //Draw 2 logic
+                break;
+            
+            case "SKIP":
+                break;
+            
+            case "REVERSE":
+                break;
+            
+            default:
+                break;
+        }
+
+        //Always do this
         let turn, discard, players;
         for(let i in roomList) {
             if(roomList[i].code == data.room) {
-                //Update hand
+                //Update hand by removing played card
                 for(let i in SOCKET_LIST) {
                     if(SOCKET_LIST[i].id == data.user) {
                         for(let card in SOCKET_LIST[i].hand){
-                            if(SOCKET_LIST[i].hand[card].color == data.card.color && SOCKET_LIST[i].hand[card].value == data.card.value) {
+                            if(SOCKET_LIST[i].hand[card].color == oldColor && SOCKET_LIST[i].hand[card].value == data.card.value) {
                                 let index = SOCKET_LIST[i].hand.indexOf(SOCKET_LIST[i].hand[card]);
                                 SOCKET_LIST[i].hand.splice(index, 1);
                             }
@@ -218,6 +245,7 @@ io.sockets.on('connection', function(socket) {
                 roomList[i].discard.push(data.card);
                 discard = roomList[i].discard;
                 //Update turn
+                //Affected by skip, reverse
                 if(roomList[i].turn == roomList[i].players.length - 1) {
                     roomList[i].turn = 0;
                     turn = roomList[i].turn;
@@ -228,5 +256,6 @@ io.sockets.on('connection', function(socket) {
             }
         }
         io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn});
+
     });
 });

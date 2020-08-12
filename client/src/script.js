@@ -2,10 +2,10 @@ var socket = io();
 let socketList = [];
 let nameList = [];
 let playersList = [];
-let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name;
+let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name, popup;
 let scene;
 let currSocket, host, currRoom;
-var topCard;
+var topCard, wildValue;
 
 function setup() {
     //socket = io();
@@ -18,6 +18,7 @@ function setup() {
     startButton = document.getElementById("start-game");
     unoButton = document.getElementById("uno");
     drawButton = document.getElementById("draw");
+    popup = document.getElementById("choose-color");
 
     createCanvas(windowWidth, windowHeight);
     colorMode(HSB, 360, 100, 100);
@@ -61,6 +62,7 @@ function gameLoop() {
             startButton.style.display = "none";
             unoButton.style.display = "none";
             drawButton.style.display = "none";
+            popup.style.display = "none";
 
             if(nameInput.value.length == 0) {
                 playButton.disabled = true;
@@ -167,12 +169,19 @@ function cardOnClick(card) {
     socket.off('validateSuccess');
     socket.once('validateSuccess', function(data) {
         if(data.user == currSocket) {
-            //Playing the card
-            socket.emit('playCard', {card: card, user: currSocket, room: currRoom});
-            drawButton.style.display = "none";
-            let handDiv = document.getElementById('hand');
-            while(handDiv.firstChild){
-            handDiv.removeChild(hand.firstChild);
+            //If wild card
+            if(card.color == "WILD") {
+                //Display choose color popup
+                wildValue = card.value;
+                popup.style.display = "block";
+            } else { //Any color card
+                socket.emit('playCard', {card: card, user: currSocket, room: currRoom});
+                //Update UI
+                drawButton.style.display = "none";
+                let handDiv = document.getElementById('hand');
+                while(handDiv.firstChild){
+                handDiv.removeChild(hand.firstChild);
+                }
             }
         }
     });
@@ -278,6 +287,18 @@ function startGame() {
         }
     });
     socket.emit('startGame', {players: playersList, code: currRoom});
+}
+
+//Hide modal when color chosen
+function changeColor(color) {
+    popup.style.display = "none";
+    socket.emit('playCard', {card: {color: "WILD", value: wildValue}, user: currSocket, room: currRoom, newColor: color});
+    //Update UI
+    drawButton.style.display = "none";
+    let handDiv = document.getElementById('hand');
+    while(handDiv.firstChild){
+    handDiv.removeChild(hand.firstChild);
+    }
 }
 
 //Random string generator function for room codes
