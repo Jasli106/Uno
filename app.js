@@ -173,7 +173,7 @@ io.sockets.on('connection', function(socket) {
                         if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
                             roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn);
                         } else if(roomList[i].turn < 0 && turnAdd < 0) {
-                            roomList[i].turn = roomList[i].players.length - 1; //Fix this to account for overflow
+                            roomList[i].turn = roomList[i].players.length + roomList[i].turn;
                         }
                         turn = roomList[i].turn;
                         //Reset if skipped
@@ -260,7 +260,7 @@ io.sockets.on('connection', function(socket) {
                 if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
                     roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn);
                 } else if(roomList[i].turn < 0 && turnAdd < 0){
-                    roomList[i].turn = roomList[i].players.length - 1; //Fix this to account for overflow
+                    roomList[i].turn = roomList[i].players.length + roomList[i].turn;
                 }
                 turn = roomList[i].turn;
                 //Reset if skipped
