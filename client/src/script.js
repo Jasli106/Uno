@@ -5,7 +5,7 @@ let playersList = [];
 let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name, popup;
 let scene;
 let currSocket, host, currRoom;
-var topCard, wildValue;
+var topCard, wildValue, turnAdd;
 
 function setup() {
     //socket = io();
@@ -106,6 +106,7 @@ function gameLoop() {
             //Gameplay
             socket.off('turn');
             socket.once("turn", function(data){
+                console.log(data.turn);
                 startButton.style.display = "none";
                 topCard = data.top;
                 for(let player in data.players) {
@@ -125,6 +126,7 @@ function gameLoop() {
                         unoButton.style.display = "none";
                     }
                 }
+                turnAdd = data.turnAdd;
             });
             //If play, check if selected card is valid (wild or same color or value)
             //Check if no cards left in hand
@@ -157,7 +159,7 @@ function playTurn(hand) {
     //Show draw button + functionality
     drawButton.style.display = "block";
     drawButton.onclick = function() {
-        socket.emit('drawCard', {socket: currSocket, room: currRoom});
+        socket.emit('drawCard', {socket: currSocket, room: currRoom, turnAdd: turnAdd});
         drawButton.style.display = "none";
     }
 }
@@ -175,7 +177,7 @@ function cardOnClick(card) {
                 wildValue = card.value;
                 popup.style.display = "block";
             } else { //Any color card
-                socket.emit('playCard', {card: card, user: currSocket, room: currRoom});
+                socket.emit('playCard', {card: card, user: currSocket, room: currRoom, turnAdd: turnAdd});
                 //Update UI
                 drawButton.style.display = "none";
                 let handDiv = document.getElementById('hand');
@@ -265,6 +267,7 @@ function joinGame() {
                 //Draw cards
             }
         }
+        turnAdd = data.turnAdd;
     });
 }
 
@@ -285,6 +288,7 @@ function startGame() {
                 //Draw cards
             }
         }
+        turnAdd = data.turnAdd;
     });
     socket.emit('startGame', {players: playersList, code: currRoom});
 }
@@ -292,7 +296,7 @@ function startGame() {
 //Hide modal when color chosen
 function changeColor(color) {
     popup.style.display = "none";
-    socket.emit('playCard', {card: {color: "WILD", value: wildValue}, user: currSocket, room: currRoom, newColor: color});
+    socket.emit('playCard', {card: {color: "WILD", value: wildValue}, user: currSocket, room: currRoom, newColor: color, turnAdd: turnAdd});
     //Update UI
     drawButton.style.display = "none";
     let handDiv = document.getElementById('hand');

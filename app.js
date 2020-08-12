@@ -141,7 +141,7 @@ io.sockets.on('connection', function(socket) {
                     roomList[i].turn = 0;
                 }
             }
-            io.sockets.emit('turn', {top: data.discard[0], players: data.players, turn: 0});
+            io.sockets.emit('turn', {top: data.discard[0], players: data.players, turn: 0, turnAdd: turnAdd});
         })
         .catch(function(error) {
             console.log(error.message);
@@ -149,8 +149,12 @@ io.sockets.on('connection', function(socket) {
 
     });
 
+
+    let turnAdd = 1;
+
     //Player draws a card
     socket.on('drawCard', function(data) {
+        turnAdd = data.turnAdd;
         let deck, card, discard, players, turn;
         //Update player info
         for(let i in SOCKET_LIST) {
@@ -165,18 +169,22 @@ io.sockets.on('connection', function(socket) {
                         roomList[i].deck = deck;
                         roomList[i].hands[roomList[i].turn].push(card);
                         //Update turn
-                        if(roomList[i].turn == roomList[i].players.length - 1) {
-                            roomList[i].turn = 0;
-                            turn = roomList[i].turn;
-                        } else {
-                            roomList[i].turn += 1;
-                            turn = roomList[i].turn;
+                        roomList[i].turn += turnAdd;
+                        if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
+                            roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn);
+                        } else if(roomList[i].turn < 0 && turnAdd < 0) {
+                            roomList[i].turn = roomList[i].players.length - 1; //Fix this to account for overflow
+                        }
+                        turn = roomList[i].turn;
+                        //Reset if skipped
+                        if(turnAdd == 2 || turnAdd == -2) {
+                            turnAdd = turnAdd/2;
                         }
                     }
                 }
             }
         }
-        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn});
+        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd});
     });
         
     //Validating if a card can be played
@@ -198,7 +206,8 @@ io.sockets.on('connection', function(socket) {
 
     //socket on playCard
     socket.on('playCard', function(data) {
-        console.log("playing card " + data.card.color + data.card.value);
+        turnAdd = data.turnAdd;
+        //console.log("playing card " + data.card.color + data.card.value);
         let oldColor = data.card.color;
         switch(data.card.value) {
             case "CHANGE_COLOR":
@@ -215,9 +224,11 @@ io.sockets.on('connection', function(socket) {
                 break;
             
             case "SKIP":
+                turnAdd *= 2;
                 break;
             
             case "REVERSE":
+                turnAdd *= -1;
                 break;
             
             default:
@@ -245,17 +256,20 @@ io.sockets.on('connection', function(socket) {
                 roomList[i].discard.push(data.card);
                 discard = roomList[i].discard;
                 //Update turn
-                //Affected by skip, reverse
-                if(roomList[i].turn == roomList[i].players.length - 1) {
-                    roomList[i].turn = 0;
-                    turn = roomList[i].turn;
-                } else {
-                    roomList[i].turn += 1;
-                    turn = roomList[i].turn;
+                roomList[i].turn += turnAdd;
+                if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
+                    roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn);
+                } else if(roomList[i].turn < 0 && turnAdd < 0){
+                    roomList[i].turn = roomList[i].players.length - 1; //Fix this to account for overflow
+                }
+                turn = roomList[i].turn;
+                //Reset if skipped
+                if(turnAdd == 2 || turnAdd == -2) {
+                    turnAdd = turnAdd/2;
                 }
             }
         }
-        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn});
+        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd});
 
     });
 });
