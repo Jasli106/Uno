@@ -18,7 +18,8 @@ function setup() {
     startButton = document.getElementById("start-game");
     unoButton = document.getElementById("uno");
     drawButton = document.getElementById("draw");
-    popup = document.getElementById("choose-color");
+    colorPopup = document.getElementById("choose-color");
+    drawPopup = document.getElementById("stack-or-draw");
 
     createCanvas(windowWidth, windowHeight);
     colorMode(HSB, 360, 100, 100);
@@ -62,7 +63,8 @@ function gameLoop() {
             startButton.style.display = "none";
             unoButton.style.display = "none";
             drawButton.style.display = "none";
-            popup.style.display = "none";
+            colorPopup.style.display = "none";
+            drawPopup.style.display = "none";
 
             if(nameInput.value.length == 0) {
                 playButton.disabled = true;
@@ -112,6 +114,11 @@ function gameLoop() {
                 for(let player in data.players) {
                     //If currently your turn
                     if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
+                        //If last player played a draw2
+                        if(data.drawTwo) {
+                            drawPopup.style.display = "block";
+                        }
+                        //Show hand and buttons
                         playTurn(data.players[player].hand);
                         unoButton.style.display = "block";
                     //If not your turn
@@ -128,12 +135,6 @@ function gameLoop() {
                 }
                 turnAdd = data.turnAdd;
             });
-            //If play, check if selected card is valid (wild or same color or value)
-            //Check if no cards left in hand
-            //If no cards left, broadcast game end to server
-            //Uhhhh implement the uno rule somehow
-            //Broadcast play: decision to server, socket, player name
-            //If game over: socket.off turn
             break;
     }
 }
@@ -175,7 +176,7 @@ function cardOnClick(card) {
             if(card.color == "WILD") {
                 //Display choose color popup
                 wildValue = card.value;
-                popup.style.display = "block";
+                colorPopup.style.display = "block";
             } else { //Any color card
                 socket.emit('playCard', {card: card, user: currSocket, room: currRoom, turnAdd: turnAdd});
                 //Update UI
@@ -295,7 +296,7 @@ function startGame() {
 
 //Hide modal when color chosen
 function changeColor(color) {
-    popup.style.display = "none";
+    colorPopup.style.display = "none";
     socket.emit('playCard', {card: {color: "WILD", value: wildValue}, user: currSocket, room: currRoom, newColor: color, turnAdd: turnAdd});
     //Update UI
     drawButton.style.display = "none";

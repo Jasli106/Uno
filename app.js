@@ -2,6 +2,7 @@ const Deck = require('./helper/deck.js');
 
 //Express setup
 var express = require('express');
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 var app = express();
 var server = require('http').Server(app);
 
@@ -151,6 +152,8 @@ io.sockets.on('connection', function(socket) {
 
 
     let turnAdd = 1;
+    let drawCards = 0;
+    let drawTwo = false;
 
     //Player draws a card
     socket.on('drawCard', function(data) {
@@ -212,26 +215,39 @@ io.sockets.on('connection', function(socket) {
         switch(data.card.value) {
             case "CHANGE_COLOR":
                 data.card.color = data.newColor;
+                drawTwo = false;
+                drawCards = 0;
                 break;
             
             case "DRAW_4":
+                //Give next player 4 cards and skip next player's turn
                 data.card.color = data.newColor;
-                //Draw 4 logic
+                drawCards = 4;
+                turnAdd *= 2;
+                drawTwo = false;
                 break;
             
             case "DRAW_TWO":
-                //Draw 2 logic
+                //Draw 2 logic (give next player option to stack or draw)
+                drawCards += 2;
+                drawTwo = true;
                 break;
             
             case "SKIP":
                 turnAdd *= 2;
+                drawTwo = false;
+                drawCards = 0;
                 break;
             
             case "REVERSE":
                 turnAdd *= -1;
+                drawTwo = false;
+                drawCards = 0;
                 break;
             
             default:
+                drawTwo = false;
+                drawCards = 0;
                 break;
         }
 
@@ -258,9 +274,9 @@ io.sockets.on('connection', function(socket) {
                 //Update turn
                 roomList[i].turn += turnAdd;
                 if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
-                    roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn);
+                    roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn); //wrong
                 } else if(roomList[i].turn < 0 && turnAdd < 0){
-                    roomList[i].turn = roomList[i].players.length + roomList[i].turn;
+                    roomList[i].turn = roomList[i].players.length + roomList[i].turn; //wrong
                 }
                 turn = roomList[i].turn;
                 //Reset if skipped
@@ -269,7 +285,7 @@ io.sockets.on('connection', function(socket) {
                 }
             }
         }
-        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd});
+        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd, draw: drawCards, drawTwo: drawTwo});
 
     });
 });
