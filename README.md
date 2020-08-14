@@ -1,2 +1,8 @@
 # Uno
-I really hope you know what Uno is. It's a pretty popular game. This is an online version of Uno made with javascript/html/css and node.js because apparently it's really hard to find good versions of Uno online to play with friends? It's also something to do during quarantine, I guess.
+I really hope you know what Uno is--it's a pretty popular game. This is an online version of Uno, which can be played with friends.
+
+House rules: you can stack +2 cards, and there are no restrictions on when you can play wild cards.
+
+You can find it [here](https://the-ultimate-uno.herokuapp.com)!
+
+Written with node.js. You can run it locally at http://localhost:2000.
