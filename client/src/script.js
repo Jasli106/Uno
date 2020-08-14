@@ -133,8 +133,7 @@ function gameLoop() {
                             }
                             drawPopup.style.display = "block";
                         }
-                    //If not your turn
-                    } else if(data.players[player].socket == currSocket) {
+                    } else if(data.players[player].socket == currSocket) { //If not your turn
                         //Remove all cards from hand div
                         let handDiv = document.getElementById('hand');
                         while(handDiv.firstChild){
@@ -143,6 +142,7 @@ function gameLoop() {
                         //Hide draw button
                         drawButton.style.display = "none";
                         unoButton.style.display = "none";
+                        //TODO: Draw buttons
                     }
                 }
                 turnAdd = data.turnAdd;
@@ -336,7 +336,7 @@ function joinGame() {
                 playTurn(data.players[player].hand);
                 unoButton.style.display = "block";
             } else if(data.players[player].socket == currSocket) {
-                //Draw cards
+                //TODO: Draw cards in hand and other players
             }
         }
         turnAdd = data.turnAdd;
@@ -357,7 +357,7 @@ function startGame() {
                 playTurn(data.players[player].hand);
                 unoButton.style.display = "block";
             } else if(data.players[player].socket == currSocket) {
-                //Draw cards
+                //TODO: Draw cards
             }
         }
         turnAdd = data.turnAdd;

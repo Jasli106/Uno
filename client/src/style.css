@@ -14,6 +14,14 @@ label {
     left: 50%;
 }
 
+#hand {
+    position: absolute;
+    top: 90%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%);
+}
+
 #hand > * {
     height: 91px;
     width: 65px;

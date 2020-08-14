@@ -365,7 +365,6 @@ io.sockets.on('connection', function(socket) {
                         cards = deck.deal(2);
                         for(card in cards) {
                             roomList[i].players[player].hand.push(cards[card]);
-                            //roomList[i].hands[roomList[i].turn].push(cards[card]);
                         }
                     }
                 }
