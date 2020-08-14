@@ -150,7 +150,6 @@ io.sockets.on('connection', function(socket) {
 
     });
 
-
     let turnAdd = 1;
     let drawCards = 0;
     let drawTwo = false;
@@ -210,7 +209,7 @@ io.sockets.on('connection', function(socket) {
     });
 
 
-    //socket on playCard
+    //When a card is played
     socket.on('playCard', function(data) {
         turnAdd = data.turnAdd;
         drawCards = data.draw;
@@ -265,22 +264,7 @@ io.sockets.on('connection', function(socket) {
         let turn, discard, players, gameOver = false, winner;
         for(let i in roomList) {
             if(roomList[i].code == data.room) {
-                //Update hand by removing played card
-                for(let i in SOCKET_LIST) {
-                    if(SOCKET_LIST[i].id == data.user) {
-                        for(let card in SOCKET_LIST[i].hand){
-                            if(SOCKET_LIST[i].hand[card].color == oldColor && SOCKET_LIST[i].hand[card].value == data.card.value) {
-                                let index = SOCKET_LIST[i].hand.indexOf(SOCKET_LIST[i].hand[card]);
-                                SOCKET_LIST[i].hand.splice(index, 1);
-                                if(SOCKET_LIST[i].hand.length == 0) {
-                                    gameOver = true;
-                                    winner = SOCKET_LIST[i].name;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
+
                 //Get players
                 players = roomList[i].players;
 
@@ -314,8 +298,27 @@ io.sockets.on('connection', function(socket) {
                         }
                     }
                     roomList[i].players = players;
+                    roomList[i].hands[roomList[i].turn] = newHand;
+                }
+
+                //Update hand by removing played card
+                for(let j in players) {
+                    if(players[j].socket == data.user) {
+                        for(let card in players[j].hand){
+                            if(players[j].hand[card].color == oldColor && players[j].hand[card].value == data.card.value) {
+                                let index = players[j].hand.indexOf(players[j].hand[card]);
+                                players[j].hand.splice(index, 1);
+                                if(players[j].hand.length == 0) {
+                                    gameOver = true;
+                                    winner = players[j].name;
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
                 
+
                 //Update discard
                 roomList[i].discard.push(data.card);
                 discard = roomList[i].discard;
@@ -328,8 +331,12 @@ io.sockets.on('connection', function(socket) {
                         roomList[i].turn = roomList[i].players.length + roomList[i].turn; //wrong
                     }
                 } else { //Well this doesn't work either
-                    if((roomList[i].turn > roomList[i].players.length - 1 || roomList[i].turn < 0) && Math.abs(turnAdd) > 1) {
+                    if(Math.abs(turnAdd) != 1 || data.card.value == "REVERSE") {
                         roomList[i].turn -= turnAdd;
+                    } else if (roomList[i].turn < 0 && turnAdd < 0) {
+                        roomList[i].turn = roomList[i].players.length - 1;
+                    } else if (roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
+                        roomList[i].turn = 0;
                     }
                 }
                 turn = roomList[i].turn;
@@ -345,5 +352,15 @@ io.sockets.on('connection', function(socket) {
             io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd, draw: drawCards, drawTwo: drawTwo});
         }
 
+    });
+
+    //If player fails to press uno
+    socket.on('unoPenalty', function(data) {
+        //Deal 2 cards to player who gets penalty
+    });
+
+    //When a player presses uno
+    socket.on('unoPressed', function(data) {
+        //Show uno to all players in room
     });
 });

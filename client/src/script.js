@@ -2,10 +2,10 @@ var socket = io();
 let socketList = [];
 let nameList = [];
 let playersList = [];
-let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name, popup;
+let createButton, joinButton, playButton, nameInput, roomInput, startButton, unoButton, drawButton, colorPopup, drawPopup, roomCode, name;
 let scene;
 let currSocket, host, currRoom;
-var topCard, wildValue, turnAdd, drawTwo, drawCards = 0, winner;
+var topCard, wildValue, turnAdd, drawTwo, drawCards = 0, winner, uno = false, unoPressed = false;
 
 function setup() {
     //socket = io();
@@ -40,6 +40,9 @@ function setup() {
     joinButton.onclick = joinGame;
     playButton.onclick = play;
     startButton.onclick = startGame;
+    unoButton.onclick = function() {
+        unoPressed = true;
+    };
 
     scene = 0;
 }
@@ -159,6 +162,17 @@ function gameLoop() {
 
 //Functionality for when it's your turn
 function playTurn(hand) {
+    //Uno functionality
+    if(hand.length == 2 || hand.length == 1) {
+        uno = true;
+        unoPressed = false;
+        unoButton.disabled = false;
+    } else {
+        uno = false;
+        unoPressed = false;
+        unoButton.disabled = true;
+    }
+
     //Remove all cards from hand div
     let handDiv = document.getElementById('hand');
     while(handDiv.firstChild){
@@ -181,6 +195,7 @@ function playTurn(hand) {
         socket.emit('drawCard', {socket: currSocket, room: currRoom, turnAdd: turnAdd, numCards: 1});
         drawButton.style.display = "none";
     }
+
 }
 
 //When card selected to be played
@@ -229,6 +244,13 @@ function cardOnClick(card) {
                     let handDiv = document.getElementById('hand');
                     while(handDiv.firstChild){
                     handDiv.removeChild(hand.firstChild);
+                    }
+                }
+                if(uno) {
+                    if(!unoPressed) {
+                        socket.emit('unoPenalty', {user: currSocket, room: currRoom});
+                    } else if(unoPressed) {
+                        socket.emit('unoPressed', {user: currSocket, room: currRoom});
                     }
                 }
             }
