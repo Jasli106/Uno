@@ -168,9 +168,11 @@ io.sockets.on('connection', function(socket) {
                         deck = roomList[i].deck;
                         discard = roomList[i].discard;
                         players = roomList[i].players;
-                        card = deck.deal(1)[0];
+                        cards = deck.deal(data.numCards);
                         roomList[i].deck = deck;
-                        roomList[i].hands[roomList[i].turn].push(card);
+                        for(card in cards) {
+                            roomList[i].hands[roomList[i].turn].push(cards[card]);
+                        }
                         //Update turn
                         roomList[i].turn += turnAdd;
                         if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
@@ -210,6 +212,7 @@ io.sockets.on('connection', function(socket) {
     //socket on playCard
     socket.on('playCard', function(data) {
         turnAdd = data.turnAdd;
+        drawCards = data.draw;
         //console.log("playing card " + data.card.color + data.card.value);
         let oldColor = data.card.color;
         switch(data.card.value) {
@@ -262,6 +265,7 @@ io.sockets.on('connection', function(socket) {
                             if(SOCKET_LIST[i].hand[card].color == oldColor && SOCKET_LIST[i].hand[card].value == data.card.value) {
                                 let index = SOCKET_LIST[i].hand.indexOf(SOCKET_LIST[i].hand[card]);
                                 SOCKET_LIST[i].hand.splice(index, 1);
+                                break;
                             }
                         }
                     }
@@ -285,6 +289,7 @@ io.sockets.on('connection', function(socket) {
                 }
             }
         }
+        console.log(drawCards);
         io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd, draw: drawCards, drawTwo: drawTwo});
 
     });

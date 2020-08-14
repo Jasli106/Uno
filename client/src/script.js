@@ -5,7 +5,7 @@ let playersList = [];
 let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name, popup;
 let scene;
 let currSocket, host, currRoom;
-var topCard, wildValue, turnAdd;
+var topCard, wildValue, turnAdd, drawTwo, drawCards = 0;
 
 function setup() {
     //socket = io();
@@ -108,19 +108,28 @@ function gameLoop() {
             //Gameplay
             socket.off('turn');
             socket.once("turn", function(data){
-                console.log(data.turn);
+                drawTwo = false;
                 startButton.style.display = "none";
                 topCard = data.top;
                 for(let player in data.players) {
                     //If currently your turn
                     if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
-                        //If last player played a draw2
-                        if(data.drawTwo) {
-                            drawPopup.style.display = "block";
-                        }
                         //Show hand and buttons
                         playTurn(data.players[player].hand);
                         unoButton.style.display = "block";
+                        //If last player played a draw2
+                        if(data.drawTwo) {
+                            drawCards = data.draw;
+                            console.log(drawCards);
+                            document.getElementById('stack').disabled = true;
+                            //Enable stack button if eligible card in hand
+                            for(card in data.players[player].hand) {
+                                if(data.players[player].hand[card].value == "DRAW_TWO") {
+                                    document.getElementById('stack').disabled = false;
+                                }
+                            }
+                            drawPopup.style.display = "block";
+                        }
                     //If not your turn
                     } else if(data.players[player].socket == currSocket) {
                         //Remove all cards from hand div
@@ -160,41 +169,70 @@ function playTurn(hand) {
     //Show draw button + functionality
     drawButton.style.display = "block";
     drawButton.onclick = function() {
-        socket.emit('drawCard', {socket: currSocket, room: currRoom, turnAdd: turnAdd});
+        socket.emit('drawCard', {socket: currSocket, room: currRoom, turnAdd: turnAdd, numCards: 1});
         drawButton.style.display = "none";
     }
 }
 
 //When card selected to be played
 function cardOnClick(card) {
-    //Check if card valid first
-    socket.emit('validateCard', {card: card, room: currRoom});
-    socket.off('validateSuccess');
-    socket.once('validateSuccess', function(data) {
-        if(data.user == currSocket) {
-            //If wild card
-            if(card.color == "WILD") {
-                //Display choose color popup
-                wildValue = card.value;
-                colorPopup.style.display = "block";
-            } else { //Any color card
-                socket.emit('playCard', {card: card, user: currSocket, room: currRoom, turnAdd: turnAdd});
-                //Update UI
-                drawButton.style.display = "none";
-                let handDiv = document.getElementById('hand');
-                while(handDiv.firstChild){
-                handDiv.removeChild(hand.firstChild);
+    if(drawTwo) { //If stacking drawTwo
+        if(card.value == "DRAW_TWO") { //If chosen card is drawTwo
+            socket.emit('validateCard', {card: card, room: currRoom});
+            socket.off('validateSuccess');
+            socket.once('validateSuccess', function(data) {
+                if(data.user == currSocket) {
+                    socket.emit('playCard', {card: card, user: currSocket, room: currRoom, turnAdd: turnAdd, draw: drawCards});
+                    //Update UI
+                    drawButton.style.display = "none";
+                    let handDiv = document.getElementById('hand');
+                    while(handDiv.firstChild){
+                        handDiv.removeChild(hand.firstChild);
+                    }
                 }
-            }
-        }
-    });
-    socket.off('validateFail');
-    socket.once('validateFail', function(data) {
-        if(data.user == currSocket) {
+            });
+            socket.off('validateFail');
+            socket.once('validateFail', function(data) {
+                if(data.user == currSocket) {
+                    //Alert the user to try again
+                    alert("Can't play card.");
+                }
+            });
+        } else {
             //Alert the user to try again
             alert("Can't play card.");
         }
-    });
+    } else {
+        //Check if card valid first
+        socket.emit('validateCard', {card: card, room: currRoom});
+        socket.off('validateSuccess');
+        socket.once('validateSuccess', function(data) {
+            if(data.user == currSocket) {
+                //If wild card
+                if(card.color == "WILD") {
+                    //Display choose color popup
+                    wildValue = card.value;
+                    colorPopup.style.display = "block";
+                } else { //Any color card
+                    socket.emit('playCard', {card: card, user: currSocket, room: currRoom, turnAdd: turnAdd, draw: drawCards});
+                    //Update UI
+                    drawButton.style.display = "none";
+                    let handDiv = document.getElementById('hand');
+                    while(handDiv.firstChild){
+                    handDiv.removeChild(hand.firstChild);
+                    }
+                }
+            }
+        });
+        socket.off('validateFail');
+        socket.once('validateFail', function(data) {
+            if(data.user == currSocket) {
+                //Alert the user to try again
+                alert("Can't play card.");
+            }
+        });
+    }
+    
 
 }
 
@@ -297,12 +335,22 @@ function startGame() {
 //Hide modal when color chosen
 function changeColor(color) {
     colorPopup.style.display = "none";
-    socket.emit('playCard', {card: {color: "WILD", value: wildValue}, user: currSocket, room: currRoom, newColor: color, turnAdd: turnAdd});
+    socket.emit('playCard', {card: {color: "WILD", value: wildValue}, user: currSocket, room: currRoom, newColor: color, turnAdd: turnAdd, draw: drawCards});
     //Update UI
     drawButton.style.display = "none";
     let handDiv = document.getElementById('hand');
     while(handDiv.firstChild){
     handDiv.removeChild(hand.firstChild);
+    }
+}
+
+function handleDrawTwo(input) {
+    if(input == "stack") { //Stack a draw 2
+        drawPopup.style.display = "none";
+        drawTwo = true;
+    } else { //Draw the cards
+        drawPopup.style.display = "none";
+        socket.emit('drawCard', {socket: currSocket, room: currRoom, turnAdd: turnAdd, numCards: drawCards});
     }
 }
 
