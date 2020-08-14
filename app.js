@@ -1,4 +1,5 @@
 const Deck = require('./helper/deck.js');
+const port = process.env.PORT || 2000
 
 //Express setup
 var express = require('express');
@@ -10,7 +11,7 @@ app.get('/', function(req, res) {
     res.sendFile(__dirname + '/client/index.html');
 });
 app.use('/client', express.static(__dirname + '/client'));
-server.listen(2000); //server listening for changes at port 2000
+server.listen(port); //server listening for changes at port 2000
 console.log("Server started");
 
 //Socket.io setup
