@@ -154,6 +154,7 @@ io.sockets.on('connection', function(socket) {
     let turnAdd = 1;
     let drawCards = 0;
     let drawTwo = false;
+    let drawFour = false;
 
     //Player draws a card
     socket.on('drawCard', function(data) {
@@ -219,37 +220,43 @@ io.sockets.on('connection', function(socket) {
             case "CHANGE_COLOR":
                 data.card.color = data.newColor;
                 drawTwo = false;
+                drawFour = false;
                 drawCards = 0;
                 break;
             
             case "DRAW_4":
                 //Give next player 4 cards and skip next player's turn
                 data.card.color = data.newColor;
-                drawCards = 4;
                 turnAdd *= 2;
+                drawCards = 0;
                 drawTwo = false;
+                drawFour = true;
                 break;
             
             case "DRAW_TWO":
                 //Draw 2 logic (give next player option to stack or draw)
                 drawCards += 2;
                 drawTwo = true;
+                drawFour = false;
                 break;
             
             case "SKIP":
                 turnAdd *= 2;
                 drawTwo = false;
+                drawFour = false;
                 drawCards = 0;
                 break;
             
             case "REVERSE":
                 turnAdd *= -1;
                 drawTwo = false;
+                drawFour = false;
                 drawCards = 0;
                 break;
             
             default:
                 drawTwo = false;
+                drawFour = false;
                 drawCards = 0;
                 break;
         }
@@ -272,6 +279,39 @@ io.sockets.on('connection', function(socket) {
                 }
                 //Get players
                 players = roomList[i].players;
+
+                //Draw four logic (ew)
+                if(drawFour) {
+                    let newHand;
+                    for(player in players) {
+                        if(data.user == players[player].socket) {
+                            if (players[player].number == players.length - 1 && turnAdd > 0) {
+                                for(playertwo in players) {
+                                    if(players[playertwo].number == 0) {
+                                        newHand = players[playertwo].hand.concat(roomList[i].deck.deal(4));
+                                        players[playertwo].hand = newHand;
+                                    }
+                                }
+                            } else if (players[player].number == 0 && turnAdd < 0) {
+                                for(playertwo in players) {
+                                    if(players[playertwo].number == players.length - 1) {
+                                        newHand = players[playertwo].hand.concat(roomList[i].deck.deal(4));
+                                        players[playertwo].hand = newHand;
+                                    }
+                                }
+                            } else {
+                                for(playertwo in players) {
+                                    if(players[playertwo].number == players[player].number + turnAdd/(Math.abs(turnAdd))) {
+                                        newHand = players[playertwo].hand.concat(roomList[i].deck.deal(4));
+                                        players[playertwo].hand = newHand;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    roomList[i].players = players;
+                }
+                
                 //Update discard
                 roomList[i].discard.push(data.card);
                 discard = roomList[i].discard;
