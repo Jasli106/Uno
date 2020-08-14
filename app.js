@@ -357,6 +357,20 @@ io.sockets.on('connection', function(socket) {
     //If player fails to press uno
     socket.on('unoPenalty', function(data) {
         //Deal 2 cards to player who gets penalty
+        for(let i in roomList) {
+            if(roomList[i].code == data.room) {
+                for(let player in roomList[i].players) {
+                    if(roomList[i].players[player].socket == data.user) {
+                        deck = roomList[i].deck;
+                        cards = deck.deal(2);
+                        for(card in cards) {
+                            roomList[i].players[player].hand.push(cards[card]);
+                            //roomList[i].hands[roomList[i].turn].push(cards[card]);
+                        }
+                    }
+                }
+            }
+        }
     });
 
     //When a player presses uno

@@ -42,6 +42,7 @@ function setup() {
     startButton.onclick = startGame;
     unoButton.onclick = function() {
         unoPressed = true;
+        unoButton.disabled = true;
     };
 
     scene = 0;
@@ -163,7 +164,7 @@ function gameLoop() {
 //Functionality for when it's your turn
 function playTurn(hand) {
     //Uno functionality
-    if(hand.length == 2 || hand.length == 1) {
+    if(hand.length == 2) {
         uno = true;
         unoPressed = false;
         unoButton.disabled = false;
@@ -232,6 +233,14 @@ function cardOnClick(card) {
         socket.off('validateSuccess');
         socket.once('validateSuccess', function(data) {
             if(data.user == currSocket) {
+                //If player is (about to be) on uno
+                if(uno) {
+                    if(!unoPressed) {
+                        socket.emit('unoPenalty', {user: currSocket, room: currRoom});
+                    } else if(unoPressed) {
+                        socket.emit('unoPressed', {user: currSocket, room: currRoom});
+                    }
+                }
                 //If wild card
                 if(card.color == "WILD") {
                     //Display choose color popup
@@ -244,13 +253,6 @@ function cardOnClick(card) {
                     let handDiv = document.getElementById('hand');
                     while(handDiv.firstChild){
                     handDiv.removeChild(hand.firstChild);
-                    }
-                }
-                if(uno) {
-                    if(!unoPressed) {
-                        socket.emit('unoPenalty', {user: currSocket, room: currRoom});
-                    } else if(unoPressed) {
-                        socket.emit('unoPressed', {user: currSocket, room: currRoom});
                     }
                 }
             }
