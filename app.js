@@ -262,7 +262,7 @@ io.sockets.on('connection', function(socket) {
         }
 
         //Always do this
-        let turn, discard, players;
+        let turn, discard, players, gameOver = false, winner;
         for(let i in roomList) {
             if(roomList[i].code == data.room) {
                 //Update hand by removing played card
@@ -272,6 +272,10 @@ io.sockets.on('connection', function(socket) {
                             if(SOCKET_LIST[i].hand[card].color == oldColor && SOCKET_LIST[i].hand[card].value == data.card.value) {
                                 let index = SOCKET_LIST[i].hand.indexOf(SOCKET_LIST[i].hand[card]);
                                 SOCKET_LIST[i].hand.splice(index, 1);
+                                if(SOCKET_LIST[i].hand.length == 0) {
+                                    gameOver = true;
+                                    winner = SOCKET_LIST[i].name;
+                                }
                                 break;
                             }
                         }
@@ -317,10 +321,16 @@ io.sockets.on('connection', function(socket) {
                 discard = roomList[i].discard;
                 //Update turn
                 roomList[i].turn += turnAdd;
-                if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
-                    roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn); //wrong
-                } else if(roomList[i].turn < 0 && turnAdd < 0){
-                    roomList[i].turn = roomList[i].players.length + roomList[i].turn; //wrong
+                if(roomList[i].players.length >= 3) {
+                    if(roomList[i].turn > roomList[i].players.length - 1 && turnAdd > 0) {
+                        roomList[i].turn = Math.abs(roomList[i].players.length - roomList[i].turn); //wrong
+                    } else if(roomList[i].turn < 0 && turnAdd < 0){
+                        roomList[i].turn = roomList[i].players.length + roomList[i].turn; //wrong
+                    }
+                } else { //Well this doesn't work either
+                    if((roomList[i].turn > roomList[i].players.length - 1 || roomList[i].turn < 0) && Math.abs(turnAdd) > 1) {
+                        roomList[i].turn -= turnAdd;
+                    }
                 }
                 turn = roomList[i].turn;
                 //Reset if skipped
@@ -329,7 +339,11 @@ io.sockets.on('connection', function(socket) {
                 }
             }
         }
-        io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd, draw: drawCards, drawTwo: drawTwo});
+        if(gameOver) {
+            io.sockets.emit('gameOver', winner);
+        } else {
+            io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd, draw: drawCards, drawTwo: drawTwo});
+        }
 
     });
 });

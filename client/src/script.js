@@ -5,7 +5,7 @@ let playersList = [];
 let createButton, joinButton, playButton, nameInput, roomInput, roomCode, name, popup;
 let scene;
 let currSocket, host, currRoom;
-var topCard, wildValue, turnAdd, drawTwo, drawCards = 0;
+var topCard, wildValue, turnAdd, drawTwo, drawCards = 0, winner;
 
 function setup() {
     //socket = io();
@@ -143,6 +143,16 @@ function gameLoop() {
                 }
                 turnAdd = data.turnAdd;
             });
+            socket.on('gameOver', function(data) {
+                scene = 4;
+                winner = data;
+            })
+            break;
+        //Game over
+        case 4:
+            background(95);
+            fill(0);
+            text(winner, 50, 50);
             break;
     }
 }
@@ -364,7 +374,7 @@ function genRandStr(length) {
        result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
- }
+}
 
 
- setInterval(gameLoop, 33);
+setInterval(gameLoop, 33);
