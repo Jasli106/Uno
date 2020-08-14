@@ -289,7 +289,6 @@ io.sockets.on('connection', function(socket) {
                 }
             }
         }
-        console.log(drawCards);
         io.sockets.emit('turn', {top: discard[discard.length - 1], players: players, turn: turn, turnAdd: turnAdd, draw: drawCards, drawTwo: drawTwo});
 
     });

@@ -120,7 +120,6 @@ function gameLoop() {
                         //If last player played a draw2
                         if(data.drawTwo) {
                             drawCards = data.draw;
-                            console.log(drawCards);
                             document.getElementById('stack').disabled = true;
                             //Enable stack button if eligible card in hand
                             for(card in data.players[player].hand) {
@@ -350,7 +349,9 @@ function handleDrawTwo(input) {
         drawTwo = true;
     } else { //Draw the cards
         drawPopup.style.display = "none";
+        drawTwo = false;
         socket.emit('drawCard', {socket: currSocket, room: currRoom, turnAdd: turnAdd, numCards: drawCards});
+        drawCards = 0;
     }
 }
 
