@@ -1,5 +1,5 @@
 const Deck = require('./helper/deck.js');
-const port = process.env.PORT || 2000
+const port = process.env.PORT || 2000;
 
 //Express setup
 var express = require('express');
