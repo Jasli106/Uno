@@ -1,6 +1,22 @@
 label {
     color: "black";
 }
+
+#name-input {
+    position: absolute;
+    text-align: left;
+    margin: auto;
+    top: 40%;
+    left: 50%;
+}
+#btn-play {
+    position: absolute;
+    text-align: center;
+    margin: auto;
+    top: 60%;
+    left: 50%;
+}
+
 #btn-create {
     position: absolute;
     text-align: center;
