@@ -2,7 +2,7 @@ var socket = io();
 let socketList = [];
 let nameList = [];
 let playersList = [];
-let createButton, joinButton, playButton, nameInput, roomInput, startButton, unoButton, drawButton, colorPopup, drawPopup, roomCode, name;
+let createButton, joinButton, playButton, nameInput, roomInput, startButton, unoButton, drawButton, colorPopup, drawPopup, roomCode, name, cardImage;
 let scene;
 let currSocket, host, currRoom;
 var topCard, wildValue, turnAdd, drawTwo, drawCards = 0, winner, uno = false, unoPressed = false;
@@ -20,6 +20,9 @@ function setup() {
     drawButton = document.getElementById("draw");
     colorPopup = document.getElementById("choose-color");
     drawPopup = document.getElementById("stack-or-draw");
+
+    cardImage = document.createElement("img");
+    document.getElementById("card").appendChild(cardImage);
 
     createCanvas(windowWidth, windowHeight);
     colorMode(HSB, 360, 100, 100);
@@ -53,7 +56,8 @@ function gameLoop() {
     fill(0);
 
     if(topCard) {
-        text(`${topCard.color} ${topCard.value}`, 50, 50);
+        cardImage.src = `../client/assets/${topCard.color}${topCard.value}.png`;
+        cardImage.alt = `${topCard.color} ${topCard.value}`;
     }
 
     switch(scene) {
