@@ -133,6 +133,11 @@ function gameLoop() {
                             }
                             drawPopup.style.display = "block";
                         }
+                        //Show other players hands (card backs)
+                        let otherPlayers = data.players;
+                        otherPlayers.splice(player,1);
+                        displayPlayers(otherPlayers);
+
                     } else if(data.players[player].socket == currSocket) { //If not your turn
                         //Remove all cards from hand div
                         let handDiv = document.getElementById('hand');
@@ -143,6 +148,11 @@ function gameLoop() {
                         drawButton.style.display = "none";
                         unoButton.style.display = "none";
                         //TODO: Draw buttons
+
+                        //Show other players hands (card backs)
+                        let otherPlayers = data.players;
+                        otherPlayers.splice(player,1);
+                        displayPlayers(otherPlayers);
                     }
                 }
                 turnAdd = data.turnAdd;
@@ -199,6 +209,28 @@ function playTurn(hand) {
 
 }
 
+//Display all other players and their cards (backs)
+function displayPlayers(otherPlayers) {
+    console.log("Loading other players");
+    let playersDiv = document.getElementById('other-players');
+    //Remove all existing hands
+    while(playersDiv.firstChild){
+        playersDiv.removeChild(playersDiv.firstChild);
+    }
+    //Generate other player hands
+    for(let player in otherPlayers) {
+        let playerHand = document.createElement('div');
+        playerHand.id = "hand"
+        playersDiv.appendChild(playerHand);
+        for(let card in otherPlayers[player].hand) {
+            let cardBack = document.createElement('img');
+            cardBack.src = "../client/assets/card_back.png";
+            playerHand.appendChild(cardBack);
+        }
+
+    }
+}
+
 //When card selected to be played
 function cardOnClick(card) {
     if(drawTwo) { //If stacking drawTwo
@@ -252,7 +284,7 @@ function cardOnClick(card) {
                     drawButton.style.display = "none";
                     let handDiv = document.getElementById('hand');
                     while(handDiv.firstChild){
-                    handDiv.removeChild(hand.firstChild);
+                    handDiv.removeChild(handDiv.firstChild);
                     }
                 }
             }
@@ -332,11 +364,13 @@ function joinGame() {
         scene = 3;
         startButton.style.display = "none";
         for(let player in data.players) {
-            if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
-                playTurn(data.players[player].hand);
-                unoButton.style.display = "block";
-            } else if(data.players[player].socket == currSocket) {
+            if(data.players[player].socket == currSocket) {
                 //TODO: Draw cards in hand and other players
+
+                //Show other players hands (card backs)
+                let otherPlayers = data.players;
+                otherPlayers.splice(player,1);
+                displayPlayers(otherPlayers);
             }
         }
         turnAdd = data.turnAdd;
@@ -356,8 +390,11 @@ function startGame() {
             if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
                 playTurn(data.players[player].hand);
                 unoButton.style.display = "block";
-            } else if(data.players[player].socket == currSocket) {
-                //TODO: Draw cards
+
+                //Show other players hands (card backs)
+                let otherPlayers = data.players;
+                otherPlayers.splice(player,1);
+                displayPlayers(otherPlayers);
             }
         }
         turnAdd = data.turnAdd;
