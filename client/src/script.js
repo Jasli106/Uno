@@ -139,15 +139,22 @@ function gameLoop() {
                         displayPlayers(otherPlayers);
 
                     } else if(data.players[player].socket == currSocket) { //If not your turn
+                        //Hide draw button
+                        drawButton.style.display = "none";
+                        unoButton.style.display = "none";
+                        
                         //Remove all cards from hand div
                         let handDiv = document.getElementById('hand');
                         while(handDiv.firstChild){
                             handDiv.removeChild(handDiv.firstChild);
                         }
-                        //Hide draw button
-                        drawButton.style.display = "none";
-                        unoButton.style.display = "none";
-                        //TODO: Draw buttons
+                        //Draw cards in hand
+                        for(card in data.players[player].hand) {
+                            let cardValue = data.players[player].hand[card];
+                            let cardImg = document.createElement('img');
+                            cardImg.src = `../client/assets/${cardValue.color}${cardValue.value}.png`;
+                            handDiv.appendChild(cardImg);
+                        }
 
                         //Show other players hands (card backs)
                         let otherPlayers = data.players;
@@ -365,7 +372,18 @@ function joinGame() {
         startButton.style.display = "none";
         for(let player in data.players) {
             if(data.players[player].socket == currSocket) {
-                //TODO: Draw cards in hand and other players
+                //Remove all cards from hand div
+                let handDiv = document.getElementById('hand');
+                while(handDiv.firstChild){
+                    handDiv.removeChild(handDiv.firstChild);
+                }
+                //Draw cards in hand
+                for(card in data.players[player].hand) {
+                    let cardValue = data.players[player].hand[card];
+                    let cardImg = document.createElement('img');
+                    cardImg.src = cardImg.src = `../client/assets/${cardValue.color}${cardValue.value}.png`;
+                    handDiv.appendChild(cardImg);
+                }
 
                 //Show other players hands (card backs)
                 let otherPlayers = data.players;
