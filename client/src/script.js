@@ -6,6 +6,8 @@ let createButton, joinButton, playButton, nameInput, roomInput, startButton, uno
 let scene;
 let currSocket, host, currRoom;
 var topCard, wildValue, turnAdd, drawTwo, drawCards = 0, winner, uno = false, unoPressed = false;
+let currPlayer;
+let hasCurrPlayer = false;
 
 function setup() {
     //socket = io();
@@ -56,7 +58,11 @@ function gameLoop() {
     fill(0);
 
     if(topCard) {
-        cardImage.src = `../client/assets/${topCard.color}${topCard.value}.png`;
+        if(topCard.value == "CHANGE_COLOR" || topCard.value == "DRAW_4") {
+            cardImage.src = `../client/assets/WILD${topCard.value}.png`;
+        } else {
+            cardImage.src = `../client/assets/${topCard.color}${topCard.value}.png`;
+        }
         cardImage.alt = `${topCard.color} ${topCard.value}`;
     }
 
@@ -114,58 +120,92 @@ function gameLoop() {
         //Playing scene
         case 3:
             //Gameplay
+            if(hasCurrPlayer) {
+                //Display current player
+                text(currPlayer, 50, 50);
+            }
+
             socket.off('turn');
             socket.once("turn", function(data){
                 drawTwo = false;
                 startButton.style.display = "none";
                 topCard = data.top;
-                for(let player in data.players) {
-                    //If currently your turn
-                    if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
-                        //Show hand and buttons
-                        playTurn(data.players[player].hand);
-                        unoButton.style.display = "block";
-                        //If last player played a draw2
-                        if(data.drawTwo) {
-                            drawCards = data.draw;
-                            document.getElementById('stack').disabled = true;
-                            //Enable stack button if eligible card in hand
-                            for(card in data.players[player].hand) {
-                                if(data.players[player].hand[card].value == "DRAW_TWO") {
-                                    document.getElementById('stack').disabled = false;
-                                }
-                            }
-                            drawPopup.style.display = "block";
-                        }
-                        //Show other players hands (card backs)
-                        let otherPlayers = data.players;
-                        otherPlayers.splice(player,1);
-                        displayPlayers(otherPlayers);
+                hasCurrPlayer = false;
 
-                    } else if(data.players[player].socket == currSocket) { //If not your turn
-                        //Hide draw button
-                        drawButton.style.display = "none";
-                        unoButton.style.display = "none";
-                        
-                        //Remove all cards from hand div
-                        let handDiv = document.getElementById('hand');
-                        while(handDiv.firstChild){
-                            handDiv.removeChild(handDiv.firstChild);
+                //Get current player info
+                let getCurrPlayer = new Promise(function(resolve, reject) {
+                    for(let player in data.players) {
+                        if(data.players[player].number == data.turn) {
+                            currPlayer = data.players[player].name;
+                            hasCurrPlayer = true;
+                            resolve(currPlayer);
                         }
-                        //Draw cards in hand
-                        for(card in data.players[player].hand) {
-                            let cardValue = data.players[player].hand[card];
-                            let cardImg = document.createElement('img');
-                            cardImg.src = `../client/assets/${cardValue.color}${cardValue.value}.png`;
-                            handDiv.appendChild(cardImg);
-                        }
-
-                        //Show other players hands (card backs)
-                        let otherPlayers = data.players;
-                        otherPlayers.splice(player,1);
-                        displayPlayers(otherPlayers);
                     }
-                }
+                    reject(new Error("Could not find current player"));
+                });
+
+                //Display each players screen
+                getCurrPlayer.then(function(currPlayer) {
+                    console.log(currPlayer);
+
+                    for(let player in data.players) {   
+                        //If currently your turn
+                        if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
+    
+                            //Show hand and buttons
+                            playTurn(data.players[player].hand);
+                            unoButton.style.display = "block";
+                            //If last player played a draw2
+                            if(data.drawTwo) {
+                                drawCards = data.draw;
+                                document.getElementById('stack').disabled = true;
+                                //Enable stack button if eligible card in hand
+                                for(card in data.players[player].hand) {
+                                    if(data.players[player].hand[card].value == "DRAW_TWO") {
+                                        document.getElementById('stack').disabled = false;
+                                    }
+                                }
+                                drawPopup.style.display = "block";
+                            }
+                            
+                            //Show other players hands (card backs)
+                            let otherPlayers = data.players;
+                            otherPlayers.splice(player,1);
+                            displayPlayers(otherPlayers);
+    
+                        } else if(data.players[player].socket == currSocket) { //If not your turn
+    
+                            //Hide draw button
+                            drawButton.style.display = "none";
+                            unoButton.style.display = "none";
+                            
+                            //Remove all cards from hand div
+                            let handDiv = document.getElementById('hand');
+                            while(handDiv.firstChild){
+                                handDiv.removeChild(handDiv.firstChild);
+                            }
+                            //Draw cards in hand
+                            for(card in data.players[player].hand) {
+                                let cardValue = data.players[player].hand[card];
+                                let cardImg = document.createElement('img');
+                                if(cardValue.value == "CHANGE_COLOR" || cardValue.value == "DRAW_4") {
+                                    cardImg.src = `../client/assets/WILD${cardValue.value}.png`;
+                                } else {
+                                    cardImg.src = `../client/assets/${cardValue.color}${cardValue.value}.png`;
+                                }
+                                handDiv.appendChild(cardImg);
+                            }
+                            
+                            //Show other players hands (card backs)
+                            let otherPlayers = data.players;
+                            otherPlayers.splice(player,1);
+                            displayPlayers(otherPlayers);
+                        }
+                    }
+                }).catch(function(error){
+                    console.log(error.message);
+                })
+
                 turnAdd = data.turnAdd;
             });
             socket.on('gameOver', function(data) {
@@ -181,6 +221,7 @@ function gameLoop() {
             break;
     }
 }
+
 
 //Functionality for when it's your turn
 function playTurn(hand) {
@@ -222,7 +263,6 @@ function playTurn(hand) {
 
 //Display all other players and their cards (backs)
 function displayPlayers(otherPlayers) {
-    console.log("Loading other players");
     let playersDiv = document.getElementById('other-players');
     //Remove all existing hands
     while(playersDiv.firstChild){
@@ -255,7 +295,7 @@ function cardOnClick(card) {
                     drawButton.style.display = "none";
                     let handDiv = document.getElementById('hand');
                     while(handDiv.firstChild){
-                        handDiv.removeChild(hand.firstChild);
+                        handDiv.removeChild(handDiv.firstChild);
                     }
                 }
             });
@@ -374,27 +414,54 @@ function joinGame() {
         topCard = data.top;
         scene = 3;
         startButton.style.display = "none";
-        for(let player in data.players) {
-            if(data.players[player].socket == currSocket) {
-                //Remove all cards from hand div
-                let handDiv = document.getElementById('hand');
-                while(handDiv.firstChild){
-                    handDiv.removeChild(handDiv.firstChild);
-                }
-                //Draw cards in hand
-                for(card in data.players[player].hand) {
-                    let cardValue = data.players[player].hand[card];
-                    let cardImg = document.createElement('img');
-                    cardImg.src = cardImg.src = `../client/assets/${cardValue.color}${cardValue.value}.png`;
-                    handDiv.appendChild(cardImg);
-                }
+        hasCurrPlayer = false;
 
-                //Show other players hands (card backs)
-                let otherPlayers = data.players;
-                otherPlayers.splice(player,1);
-                displayPlayers(otherPlayers);
+        //Get current player info
+        let getCurrPlayer = new Promise(function(resolve, reject) {
+            for(let player in data.players) {
+                if(data.players[player].number == data.turn) {
+                    currPlayer = data.players[player].name;
+                    hasCurrPlayer = true;
+                    resolve(currPlayer);
+                }
             }
-        }
+            reject(new Error("Could not find current player"));
+        });
+
+        //Display each players screen
+        getCurrPlayer.then(function(currPlayer) {
+            console.log(currPlayer);
+            for(let player in data.players) {
+
+                if(data.players[player].socket == currSocket) {
+    
+                    //Remove all cards from hand div
+                    let handDiv = document.getElementById('hand');
+                    while(handDiv.firstChild){
+                        handDiv.removeChild(handDiv.firstChild);
+                    }
+                    //Draw cards in hand
+                    for(card in data.players[player].hand) {
+                        let cardValue = data.players[player].hand[card];
+                        let cardImg = document.createElement('img');
+                        if(cardValue.value == "CHANGE_COLOR" || cardValue.value == "DRAW_4") {
+                            cardImg.src = `../client/assets/WILD${cardValue.value}.png`;
+                        } else {
+                            cardImg.src = `../client/assets/${cardValue.color}${cardValue.value}.png`;
+                        }
+                        handDiv.appendChild(cardImg);
+                    }
+                    
+                    //Show other players hands (card backs)
+                    let otherPlayers = data.players;
+                    otherPlayers.splice(player,1);
+                    displayPlayers(otherPlayers);
+                }
+            }
+        }).catch(function(error){
+            console.log(error.message);
+        })
+
         turnAdd = data.turnAdd;
     });
 }
@@ -408,17 +475,42 @@ function startGame() {
         topCard = data.top;
         scene = 3;
         startButton.style.display = "none";
-        for(let player in data.players) {
-            if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
-                playTurn(data.players[player].hand);
-                unoButton.style.display = "block";
+        hasCurrPlayer = false;
 
-                //Show other players hands (card backs)
-                let otherPlayers = data.players;
-                otherPlayers.splice(player,1);
-                displayPlayers(otherPlayers);
+        //Get current player info
+        let getCurrPlayer = new Promise(function(resolve, reject) {
+            for(let player in data.players) {
+                if(data.players[player].number == data.turn) {
+                    currPlayer = data.players[player].name;
+                    hasCurrPlayer = true;
+                    resolve(currPlayer);
+                }
             }
-        }
+            reject(new Error("Could not find current player"));
+        });
+
+        //Display each players screen
+        getCurrPlayer.then(function(currPlayer) {
+            console.log(currPlayer);
+            for(let player in data.players) {
+
+                if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
+                    //Display current player
+                    text(currPlayer, 50, 50);
+    
+                    playTurn(data.players[player].hand);
+                    unoButton.style.display = "block";
+    
+                    //Show other players hands (card backs)
+                    let otherPlayers = data.players;
+                    otherPlayers.splice(player,1);
+                    displayPlayers(otherPlayers);
+                }
+            }
+        }).catch(function(error){
+            console.log(error.message);
+        })
+
         turnAdd = data.turnAdd;
     });
     socket.emit('startGame', {players: playersList, code: currRoom});
@@ -432,7 +524,7 @@ function changeColor(color) {
     drawButton.style.display = "none";
     let handDiv = document.getElementById('hand');
     while(handDiv.firstChild){
-    handDiv.removeChild(hand.firstChild);
+    handDiv.removeChild(handDiv.firstChild);
     }
 }
 
