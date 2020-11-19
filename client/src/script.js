@@ -10,7 +10,6 @@ let currPlayer;
 let hasCurrPlayer = false;
 
 function setup() {
-    //socket = io();
 
     createButton = document.getElementById("btn-create");
     joinButton = document.getElementById("btn-join");
@@ -111,7 +110,7 @@ function gameLoop() {
             for(let i=0; i<playersList.length; i++) {
                 text(playersList[i].name, 0, i*10 + 50);
             }
-            //host should be able to start the game, everyone can just see who is in it
+            //Host should be able to start the game, everyone can just see who is in it
             if(host) {
                 text(roomCode, 50, 50);
                 startButton.style.display = "block";
@@ -146,8 +145,6 @@ function gameLoop() {
 
                 //Display each players screen
                 getCurrPlayer.then(function(currPlayer) {
-                    console.log(currPlayer);
-
                     for(let player in data.players) {   
                         //If currently your turn
                         if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {
@@ -208,10 +205,18 @@ function gameLoop() {
 
                 turnAdd = data.turnAdd;
             });
+            socket.on('unoPressed', function(data) {
+                console.log("UNO RECEIVED");
+                for(let player in data.players) {
+                    if(data.players[player].socket == currSocket) {
+                        text('UNO: ' + data.user, 300, 300);
+                    }
+                }
+            });
             socket.on('gameOver', function(data) {
                 scene = 4;
                 winner = data;
-            })
+            });
             break;
         //Game over
         case 4:
@@ -491,7 +496,6 @@ function startGame() {
 
         //Display each players screen
         getCurrPlayer.then(function(currPlayer) {
-            console.log(currPlayer);
             for(let player in data.players) {
 
                 if(data.players[player].socket == currSocket && data.players[player].number == data.turn) {

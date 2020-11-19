@@ -105,7 +105,14 @@ io.sockets.on('connection', function(socket) {
     
             //Flip over card for the discard pile
             let discard = [];
-            discard.push(deck.deal(1)[0]);
+            let card = deck.deal(1)[0];
+            while(card.color == 'WILD') {
+                deck.push(card);
+                deck.shuffle();
+                card = deck.deal(1)[0];
+            }
+            discard.push(card);
+            
     
             //Assign each player a number and deal each player a hand
             let hands = [];
@@ -163,6 +170,7 @@ io.sockets.on('connection', function(socket) {
         //Update player info
         for(let i in SOCKET_LIST) {
             if(SOCKET_LIST[i].id == data.socket) {
+                //console.log(data.numCards);
                 //Update room info
                 for(let i in roomList) {
                     if(roomList[i].code == data.room) {
@@ -186,6 +194,7 @@ io.sockets.on('connection', function(socket) {
                         if(turnAdd == 2 || turnAdd == -2) {
                             turnAdd = turnAdd/2;
                         }
+                        //console.log(roomList[i].players);
                     }
                 }
             }
@@ -214,7 +223,6 @@ io.sockets.on('connection', function(socket) {
     socket.on('playCard', function(data) {
         turnAdd = data.turnAdd;
         drawCards = data.draw;
-        //console.log("playing card " + data.card.color + data.card.value);
         let oldColor = data.card.color;
         switch(data.card.value) {
             case "CHANGE_COLOR":
@@ -376,5 +384,11 @@ io.sockets.on('connection', function(socket) {
     //When a player presses uno
     socket.on('unoPressed', function(data) {
         //Show uno to all players in room
+        console.log("UNO");
+        for(let i in roomList) {
+            if(roomList[i].code == data.room) {
+                io.sockets.emit('showUno', {userName: data.user.name, players: roomList[i].players})
+            }
+        }
     });
 });

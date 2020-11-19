@@ -59,6 +59,10 @@ class Deck{
         }
         return hand;
     }
+
+    push(card) {
+        this.deck.push(card);
+    }
 }
 
 module.exports = Deck;
